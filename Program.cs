@@ -1,36 +1,43 @@
-// Import required libraries
+// Import required namespaces
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using HarizLearnRouting.Models;
 
-// 1️⃣ Create and build the ASP.NET Core web app
+// 1️⃣ Create and configure the web app
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-// 2️⃣ Enable routing so we can define endpoints (routes)
+// 2️⃣ Enable routing middleware
 app.UseRouting();
 
-// 3️⃣ Define endpoints for the app
+// 3️⃣ Define endpoints
 app.UseEndpoints(endpoints =>
 {
-    // 🏠 GET / → Home endpoint
+    // 🏠 Home endpoint
     endpoints.MapGet("/", async (HttpContext context) =>
     {
         await context.Response.WriteAsync("Welcome to the home page.");
     });
 
-    // 👥 GET /employees → Get one employee using a value from HTTP HEADER
-    // Example header:  "identity: 2"
-    endpoints.MapGet("/employees", ([FromHeader(Name = "identity")] int id) =>
+    // 👥 GET /employees/{id}?name=John with header: Position=Manager
+    // Uses [AsParameters] to group inputs from multiple sources
+    endpoints.MapGet("/employees/{id:int}", ([AsParameters] GetEmployeeParameter param) =>
     {
-        // ASP.NET Core MODEL BINDING automatically pulls 'identity' value
-        // from the HTTP request header and stores it into variable 'id'
-        var employee = EmployeesRepository.GetEmployeeById(id);
+        // Access values that ASP.NET bound automatically
+        // param.Id      → comes from Route {id}
+        // param.Name    → comes from Query string ?name=
+        // param.Position → comes from HTTP Header: Position:
 
-        return employee; // automatically serialized to JSON
+        var employee = EmployeesRepository.GetEmployeeById(param.Id);
+
+        // Modify data to show combined binding usage
+        employee.Name = param.Name;
+        employee.Position = param.Position;
+
+        return employee; // returns JSON
     });
 
-    // ➕ POST /employees → Add a new employee from JSON body
+    // ➕ POST /employees → Add a new employee (JSON in body)
     endpoints.MapPost("/employees", async (HttpContext context) =>
     {
         using var reader = new StreamReader(context.Request.Body);
@@ -38,18 +45,15 @@ app.UseEndpoints(endpoints =>
 
         try
         {
-            // Deserialize JSON request body into Employee object
             var employee = JsonSerializer.Deserialize<Employee>(body);
 
-            // Validate the input
             if (employee is null || employee.Id <= 0)
             {
-                context.Response.StatusCode = 400; // Bad Request
+                context.Response.StatusCode = 400;
                 return;
             }
 
             EmployeesRepository.AddEmployee(employee);
-
             context.Response.StatusCode = 201; // Created
             await context.Response.WriteAsync("Employee added successfully.");
         }
@@ -57,11 +61,10 @@ app.UseEndpoints(endpoints =>
         {
             context.Response.StatusCode = 400;
             await context.Response.WriteAsync(ex.ToString());
-            return;
         }
     });
 
-    // ✏️ PUT /employees → Update an existing employee
+    // ✏️ PUT /employees → Update employee info
     endpoints.MapPut("/employees", async (HttpContext context) =>
     {
         using var reader = new StreamReader(context.Request.Body);
@@ -71,7 +74,7 @@ app.UseEndpoints(endpoints =>
         var result = EmployeesRepository.UpdateEmployee(employee);
         if (result)
         {
-            context.Response.StatusCode = 204; // No Content (Success)
+            context.Response.StatusCode = 204;
             await context.Response.WriteAsync("Employee updated successfully.");
         }
         else
@@ -80,41 +83,58 @@ app.UseEndpoints(endpoints =>
         }
     });
 
-    // ❌ DELETE /employees/{id} → Delete employee by ID (authorized via header)
+    // ❌ DELETE /employees/{id} → Delete employee (with header check)
     endpoints.MapDelete("/employees/{id}", async (HttpContext context) =>
     {
         var id = context.Request.RouteValues["id"];
         var employeeId = int.Parse(id.ToString());
 
-        // Header Authorization check: "Authorization: frank"
         if (context.Request.Headers["Authorization"] == "frank")
         {
             var result = EmployeesRepository.DeleteEmployee(employeeId);
 
             if (result)
-            {
                 await context.Response.WriteAsync("Employee is deleted successfully.");
-            }
             else
             {
-                context.Response.StatusCode = 404; // Not Found
+                context.Response.StatusCode = 404;
                 await context.Response.WriteAsync("Employee not found.");
             }
         }
         else
         {
-            context.Response.StatusCode = 401; // Unauthorized
+            context.Response.StatusCode = 401;
             await context.Response.WriteAsync("You are not authorized to delete.");
         }
     });
 });
 
-// 4️⃣ Run the web application
+// 4️⃣ Run the app
 app.Run();
 
-// ==========================
-// 📦 Fake Employee Repository
-// ==========================
+
+// =============================
+// 🧩 GROUPED PARAMETER STRUCT
+// =============================
+
+// [AsParameters] allows ASP.NET Core to bind multiple sources (route, query, header)
+// into a single object so your endpoint stays clean and organized.
+struct GetEmployeeParameter
+{
+    [FromRoute]  // Bind from URL route {id}
+    public int Id { get; set; }
+
+    [FromQuery]  // Bind from query string (?name=...)
+    public string Name { get; set; }
+
+    [FromHeader] // Bind from HTTP header (Position: ...)
+    public string Position { get; set; }
+}
+
+
+// =============================
+// 📦 EmployeesRepository (Fake DB)
+// =============================
 public static class EmployeesRepository
 {
     private static List<Employee> employees = new List<Employee>
@@ -127,16 +147,12 @@ public static class EmployeesRepository
     public static List<Employee> GetEmployees() => employees;
 
     public static Employee? GetEmployeeById(int id)
-    {
-        return employees.FirstOrDefault(x => x.Id == id);
-    }
+        => employees.FirstOrDefault(x => x.Id == id);
 
     public static void AddEmployee(Employee? employee)
     {
         if (employee is not null)
-        {
             employees.Add(employee);
-        }
     }
 
     public static bool UpdateEmployee(Employee? employee)
@@ -167,9 +183,10 @@ public static class EmployeesRepository
     }
 }
 
-// ==========================
+
+// =============================
 // 👤 Employee Model
-// ==========================
+// =============================
 public class Employee
 {
     public int Id { get; set; }
