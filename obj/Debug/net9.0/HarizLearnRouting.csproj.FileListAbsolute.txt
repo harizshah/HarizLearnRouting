@@ -94,3 +94,4 @@ C:\Users\User\RiderProjects\Learn Routing\HarizLearnRouting\obj\Debug\net9.0\ref
 C:\Users\User\RiderProjects\Learn Routing\HarizLearnRouting\obj\Debug\net9.0\HarizLearnRouting.pdb
 C:\Users\User\RiderProjects\Learn Routing\HarizLearnRouting\obj\Debug\net9.0\HarizLearnRouting.genruntimeconfig.cache
 C:\Users\User\RiderProjects\Learn Routing\HarizLearnRouting\obj\Debug\net9.0\ref\HarizLearnRouting.dll
+C:\Users\User\RiderProjects\Learn Routing\HarizLearnRouting\obj\Debug\net9.0\HarizLearnRouting.sourcelink.json

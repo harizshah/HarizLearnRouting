@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HarizLearnRouting")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c0429eccce73b5a0feebb6178368054c88254b5")]
 [assembly: System.Reflection.AssemblyProductAttribute("HarizLearnRouting")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HarizLearnRouting")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
